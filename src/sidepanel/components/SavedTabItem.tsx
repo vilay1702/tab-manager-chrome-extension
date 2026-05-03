@@ -12,8 +12,6 @@ import {
   TextField,
 } from "@mui/material";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import StarRoundedIcon from "@mui/icons-material/StarRounded";
-import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import DriveFileMoveOutlinedIcon from "@mui/icons-material/DriveFileMoveOutlined";
@@ -29,12 +27,9 @@ import { savedId } from "../lib/dnd";
 type Props = {
   tab: Tab;
   folderId: string;
-  isFavorite: boolean;
-  canFavorite: boolean;
   isActive: boolean;
   folderOptions: { id: string; name: string }[];
   onRemove: () => void;
-  onToggleFavorite: () => void;
   onMoveTo: (folderId: string) => void;
   onRename: (name: string) => void;
 };
@@ -42,12 +37,9 @@ type Props = {
 export function SavedTabItem({
   tab,
   folderId,
-  isFavorite,
-  canFavorite,
   isActive,
   folderOptions,
   onRemove,
-  onToggleFavorite,
   onMoveTo,
   onRename,
 }: Props) {
@@ -113,9 +105,10 @@ export function SavedTabItem({
           px: 1,
           py: 0.5,
           gap: 1,
-          "& .saved-actions": { opacity: 0 },
+          position: "relative",
+          "& .saved-actions": { display: "none" },
           "&:hover .saved-actions, &:focus-within .saved-actions": {
-            opacity: 1,
+            display: "flex",
           },
           ...(isActive && {
             bgcolor: "action.selected",
@@ -184,32 +177,23 @@ export function SavedTabItem({
         />
         <Box
           className="saved-actions"
-          sx={{ display: "flex", gap: 0.25, transition: "opacity 120ms" }}
+          sx={{
+            position: "absolute",
+            right: 4,
+            top: "50%",
+            transform: "translateY(-50%)",
+            alignItems: "center",
+            gap: 0.25,
+            px: 0.5,
+            borderRadius: 1.5,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            bgcolor: (t) =>
+              t.palette.mode === "dark"
+                ? "rgba(32,33,36,0.7)"
+                : "rgba(255,255,255,0.7)",
+          }}
         >
-          <IconButton
-            size="small"
-            aria-label={
-              isFavorite ? "Remove from favorites" : "Add to favorites"
-            }
-            disabled={!isFavorite && !canFavorite}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite();
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            sx={{
-              width: 22,
-              height: 22,
-              color: isFavorite ? "primary.main" : "text.secondary",
-              opacity: isFavorite ? 1 : undefined,
-            }}
-          >
-            {isFavorite ? (
-              <StarRoundedIcon sx={{ fontSize: 16 }} />
-            ) : (
-              <StarBorderRoundedIcon sx={{ fontSize: 16 }} />
-            )}
-          </IconButton>
           <IconButton
             size="small"
             aria-label="Rename"
@@ -254,17 +238,6 @@ export function SavedTabItem({
             <OpenInNewRoundedIcon fontSize="small" />
           </MenuIcon>
           Open in new tab
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            close();
-            startRename();
-          }}
-        >
-          <MenuIcon>
-            <EditRoundedIcon fontSize="small" />
-          </MenuIcon>
-          Rename
         </MenuItem>
         {moveOptions.length > 0 && <Divider />}
         {moveOptions.map((f) => (

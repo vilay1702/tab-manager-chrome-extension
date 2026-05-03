@@ -18,11 +18,8 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { AppState, FOLDER_COLORS, Folder } from '../../lib/types';
 import { Updater } from '../hooks/useStore';
 import {
-  addFavorite,
   deleteFolder,
-  favoritesHasUrl,
   moveTab,
-  removeFavorite,
   removeTabFromFolder,
   renameFolder,
   renameTab,
@@ -107,8 +104,11 @@ export function FolderItem({
           px: 1,
           py: 0.5,
           gap: 0.5,
-          '& .folder-actions': { opacity: 0 },
-          '&:hover .folder-actions, &:focus-within .folder-actions': { opacity: 1 },
+          position: 'relative',
+          '& .folder-actions-wrap': { display: 'none' },
+          '&:hover .folder-actions-wrap, &:focus-within .folder-actions-wrap': {
+            display: 'flex',
+          },
         }}
       >
         <ChevronRightRoundedIcon
@@ -181,33 +181,51 @@ export function FolderItem({
         >
           {folder.tabs.length}
         </Typography>
-        <IconButton
-          className="folder-actions"
-          size="small"
-          aria-label="Rename folder"
-          title="Rename"
-          onClick={(e) => {
-            e.stopPropagation();
-            setDraftName(folder.name);
-            setRenaming(true);
+        <Box
+          className="folder-actions-wrap"
+          sx={{
+            position: 'absolute',
+            right: 4,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            alignItems: 'center',
+            gap: 0.25,
+            px: 0.5,
+            borderRadius: 1.5,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            bgcolor: (t) =>
+              t.palette.mode === 'dark'
+                ? 'rgba(32,33,36,0.7)'
+                : 'rgba(255,255,255,0.7)',
           }}
-          onPointerDown={(e) => e.stopPropagation()}
-          sx={{ width: 22, height: 22, color: 'text.secondary', transition: 'opacity 120ms' }}
         >
-          <EditRoundedIcon sx={{ fontSize: 14 }} />
-        </IconButton>
-        <IconButton
-          className="folder-actions"
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            openMenu(e);
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-          sx={{ width: 22, height: 22, color: 'text.secondary', transition: 'opacity 120ms' }}
-        >
-          <MoreHorizRoundedIcon sx={{ fontSize: 16 }} />
-        </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Rename folder"
+            title="Rename"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDraftName(folder.name);
+              setRenaming(true);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            sx={{ width: 22, height: 22, color: 'text.secondary' }}
+          >
+            <EditRoundedIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              openMenu(e);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            sx={{ width: 22, height: 22, color: 'text.secondary' }}
+          >
+            <MoreHorizRoundedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Box>
       </ListItemButton>
 
       <Menu anchorEl={anchor} open={!!anchor} onClose={closeMenu}>
@@ -266,25 +284,14 @@ export function FolderItem({
               strategy={verticalListSortingStrategy}
             >
               {filtered.map((tab) => {
-                const isFav = favoritesHasUrl(state, tab.url);
                 return (
                   <SavedTabItem
                     key={tab.id}
                     tab={tab}
                     folderId={folder.id}
-                    isFavorite={isFav}
-                    canFavorite={state.favorites.length < 8}
                     isActive={tab.url === activeUrl}
                     folderOptions={folderOptions}
                     onRemove={() => update(removeTabFromFolder(folder.id, tab.id))}
-                    onToggleFavorite={() => {
-                      if (isFav) {
-                        const fav = state.favorites.find((f) => f.url === tab.url);
-                        if (fav) update(removeFavorite(fav.id));
-                      } else {
-                        update(addFavorite({ ...tab, id: crypto.randomUUID() }));
-                      }
-                    }}
                     onMoveTo={(toFolderId) =>
                       update(moveTab(folder.id, toFolderId, tab.id))
                     }
