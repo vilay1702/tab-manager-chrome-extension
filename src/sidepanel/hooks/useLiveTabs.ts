@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 
 export type LiveTab = chrome.tabs.Tab;
 
+const REFRESH_DEBOUNCE_MS = 50;
+
 export function useLiveTabs() {
   const [tabs, setTabs] = useState<LiveTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<number | undefined>();
   const [windowId, setWindowId] = useState<number | undefined>();
   const cancelledRef = useRef(false);
+  const timerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -27,29 +30,41 @@ export function useLiveTabs() {
       }
     };
 
+    const scheduleRefresh = () => {
+      if (timerRef.current !== undefined) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = undefined;
+        refresh();
+      }, REFRESH_DEBOUNCE_MS);
+    };
+
     refresh();
 
-    const onAny = () => refresh();
-
-    chrome.tabs.onCreated.addListener(onAny);
-    chrome.tabs.onRemoved.addListener(onAny);
-    chrome.tabs.onUpdated.addListener(onAny);
-    chrome.tabs.onActivated.addListener(onAny);
-    chrome.tabs.onMoved.addListener(onAny);
-    chrome.tabs.onAttached.addListener(onAny);
-    chrome.tabs.onDetached.addListener(onAny);
-    chrome.windows.onFocusChanged.addListener(onAny);
+    chrome.tabs.onCreated.addListener(scheduleRefresh);
+    chrome.tabs.onRemoved.addListener(scheduleRefresh);
+    chrome.tabs.onUpdated.addListener(scheduleRefresh);
+    chrome.tabs.onActivated.addListener(scheduleRefresh);
+    chrome.tabs.onMoved.addListener(scheduleRefresh);
+    chrome.tabs.onAttached.addListener(scheduleRefresh);
+    chrome.tabs.onDetached.addListener(scheduleRefresh);
+    chrome.windows.onFocusChanged.addListener(scheduleRefresh);
 
     return () => {
       cancelledRef.current = true;
-      chrome.tabs.onCreated.removeListener(onAny);
-      chrome.tabs.onRemoved.removeListener(onAny);
-      chrome.tabs.onUpdated.removeListener(onAny);
-      chrome.tabs.onActivated.removeListener(onAny);
-      chrome.tabs.onMoved.removeListener(onAny);
-      chrome.tabs.onAttached.removeListener(onAny);
-      chrome.tabs.onDetached.removeListener(onAny);
-      chrome.windows.onFocusChanged.removeListener(onAny);
+      if (timerRef.current !== undefined) {
+        clearTimeout(timerRef.current);
+        timerRef.current = undefined;
+      }
+      chrome.tabs.onCreated.removeListener(scheduleRefresh);
+      chrome.tabs.onRemoved.removeListener(scheduleRefresh);
+      chrome.tabs.onUpdated.removeListener(scheduleRefresh);
+      chrome.tabs.onActivated.removeListener(scheduleRefresh);
+      chrome.tabs.onMoved.removeListener(scheduleRefresh);
+      chrome.tabs.onAttached.removeListener(scheduleRefresh);
+      chrome.tabs.onDetached.removeListener(scheduleRefresh);
+      chrome.windows.onFocusChanged.removeListener(scheduleRefresh);
     };
   }, []);
 

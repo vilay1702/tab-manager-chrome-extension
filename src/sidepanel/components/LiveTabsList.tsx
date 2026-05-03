@@ -18,13 +18,14 @@ export function LiveTabsList({ tabs, activeTabId, query }: Props) {
   // Every live browser tab is its own entry, identified by chrome.tabs.Tab.id.
   // Duplicates of the same URL appear as separate rows because they're
   // separate browser tabs.
+  const valid = tabs.filter((t) => t.id != null);
   const filtered = q
-    ? tabs.filter(
+    ? valid.filter(
         (t) =>
           (t.title ?? '').toLowerCase().includes(q) ||
           (t.url ?? '').toLowerCase().includes(q),
       )
-    : tabs;
+    : valid;
 
   const pinned = filtered.filter((t) => t.pinned);
   const unpinned = filtered.filter((t) => !t.pinned);
@@ -48,7 +49,7 @@ export function LiveTabsList({ tabs, activeTabId, query }: Props) {
         minHeight: 60,
       }}
     >
-      <SectionHeader label="Tabs" count={tabs.length} />
+      <SectionHeader label="Tabs" count={valid.length} />
       {filtered.length === 0 ? (
         <Typography variant="body2" sx={{ px: 1.5, color: 'text.secondary' }}>
           {q ? 'No matches.' : isOver ? 'Drop to open as a new tab.' : 'No open tabs.'}

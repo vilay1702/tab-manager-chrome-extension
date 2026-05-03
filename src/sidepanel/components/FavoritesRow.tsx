@@ -1,11 +1,11 @@
-import { Tab, FAVORITES_LIMIT } from '../../lib/types';
+import { Tab } from '../../lib/types';
 import { Updater } from '../hooks/useStore';
 import { removeFavorite } from '../state/actions';
 import { openOrActivate } from '../../lib/tabs';
 import { Favicon } from './Favicon';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
 import {
   SortableContext,
   useSortable,
@@ -18,18 +18,10 @@ import { dzFav, favId } from '../lib/dnd';
 type Props = {
   favorites: Tab[];
   update: (u: Updater) => void;
-  onAddCurrent: () => void;
-  canAddCurrent: boolean;
   activeUrl: string | undefined;
 };
 
-export function FavoritesRow({
-  favorites,
-  update,
-  onAddCurrent,
-  canAddCurrent,
-  activeUrl,
-}: Props) {
+export function FavoritesRow({ favorites, update, activeUrl }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: dzFav });
 
   return (
@@ -44,48 +36,59 @@ export function FavoritesRow({
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: 0.75,
-          px: 0.5,
-          py: 0.5,
+          px: favorites.length === 0 ? 1 : 0.5,
+          py: favorites.length === 0 ? 1 : 0.5,
           alignItems: 'center',
           borderRadius: 2,
+          border: favorites.length === 0 ? '1px dashed' : 'none',
+          borderColor: 'divider',
           outline: isOver ? '2px dashed' : '2px dashed transparent',
           outlineColor: isOver ? 'primary.main' : 'transparent',
           outlineOffset: '-2px',
           bgcolor: isOver ? 'action.selected' : 'transparent',
           transition: (t) =>
-            t.transitions.create(['outline-color', 'background-color'], { duration: 120 }),
+            t.transitions.create(
+              ['outline-color', 'background-color', 'border-color'],
+              { duration: 120 },
+            ),
           minHeight: 44,
         }}
       >
-        {favorites.map((tab) => (
-          <FavTile
-            key={tab.id}
-            tab={tab}
-            isActive={tab.url === activeUrl}
-            onOpen={(force) => openOrActivate(tab.url, force)}
-            onRemove={() => update(removeFavorite(tab.id))}
-          />
-        ))}
-        {favorites.length < FAVORITES_LIMIT && (
-          <Tooltip title={canAddCurrent ? 'Add current tab' : 'Cannot add'}>
-            <span>
-              <IconButton
-                size="small"
-                onClick={onAddCurrent}
-                disabled={!canAddCurrent}
-                sx={{
-                  width: 36,
-                  height: 36,
-                  border: 1,
-                  borderColor: 'divider',
-                  borderStyle: 'dashed',
-                  color: 'text.secondary',
-                }}
-              >
-                <AddRoundedIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+        {favorites.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: 'text.secondary',
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            <StarBorderRoundedIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: 12,
+                lineHeight: 1.3,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              Drag tabs here to favorite them
+            </Typography>
+          </Box>
+        ) : (
+          favorites.map((tab) => (
+            <FavTile
+              key={tab.id}
+              tab={tab}
+              isActive={tab.url === activeUrl}
+              onOpen={(force) => openOrActivate(tab.url, force)}
+              onRemove={() => update(removeFavorite(tab.id))}
+            />
+          ))
         )}
       </Box>
     </SortableContext>

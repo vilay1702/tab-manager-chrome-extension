@@ -140,6 +140,7 @@ export function FolderItem({
               setRenaming(false);
             }}
             onKeyDown={(e) => {
+              e.stopPropagation();
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
               if (e.key === 'Escape') {
                 setDraftName(folder.name);

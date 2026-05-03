@@ -43,9 +43,13 @@ export function SavedTabItem({
   onMoveTo,
   onRename,
 }: Props) {
+  const [anchor, setAnchor] = useState<null | HTMLElement>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(tab.title);
   const sortable = useSortable({
     id: savedId(folderId, tab.id),
     data: { folderId, type: "tab" },
+    disabled: renaming,
   });
   const {
     attributes,
@@ -55,9 +59,6 @@ export function SavedTabItem({
     transition,
     isDragging,
   } = sortable;
-  const [anchor, setAnchor] = useState<null | HTMLElement>(null);
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState(tab.title);
 
   const open = (e: MouseEvent) => setAnchor(e.currentTarget as HTMLElement);
   const close = () => setAnchor(null);

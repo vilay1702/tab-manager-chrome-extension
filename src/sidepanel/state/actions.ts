@@ -127,9 +127,25 @@ export const moveTab =
   ): Updater =>
   (s) => {
     if (fromFolderId === toFolderId) return s;
+    const target = s.folders.find((f) => f.id === toFolderId);
+    if (!target) return s; // destination deleted; abort to avoid data loss
     const from = s.folders.find((f) => f.id === fromFolderId);
     const tab = from?.tabs.find((t) => t.id === tabId);
     if (!from || !tab) return s;
+
+    // If the URL is already in the destination, just remove from source.
+    if (target.tabs.some((t) => t.url === tab.url)) {
+      return {
+        ...s,
+        folders: s.folders.map((f) =>
+          f.id === fromFolderId
+            ? { ...f, tabs: f.tabs.filter((t) => t.id !== tabId) }
+            : f,
+        ),
+        lastFolderId: toFolderId,
+      };
+    }
+
     // Move semantics: strip URL from favorites and any folder except destination.
     const stripped = stripUrlFromState(tab.url, toFolderId, false)(s);
     return {

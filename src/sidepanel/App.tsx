@@ -30,7 +30,7 @@ import {
   reorderFavorites,
   reorderTabsInFolder,
 } from './state/actions';
-import { FOLDER_COLORS } from '../lib/types';
+import { FAVORITES_LIMIT, FOLDER_COLORS } from '../lib/types';
 import { getCurrentTab, isSavable, tabFromChromeTab } from '../lib/tabs';
 import { DragInfo, parseDrag } from './lib/dnd';
 import { organizeTabs } from './lib/autoOrganize';
@@ -50,19 +50,20 @@ export function App() {
   }, [state.folders.length, update]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
-  const canAddCurrent = !!activeTab && isSavable(activeTab.url);
   const alreadyFavorite =
     !!activeTab && state.favorites.some((f) => f.url === activeTab.url);
 
   const addCurrentToFavorites = useCallback(async () => {
     const t = activeTab ?? (await getCurrentTab());
     if (!t) return;
+    if (!isSavable(t.url)) return;
     const tab = tabFromChromeTab(t);
     if (!tab) return;
-    if (state.favorites.length >= 8) {
+    if (state.favorites.length >= FAVORITES_LIMIT) {
       setToast('Favorites are full (max 8).');
       return;
     }
+    if (state.favorites.some((f) => f.url === tab.url)) return;
     update(addFavorite(tab));
     if (t.id != null) {
       try {
@@ -71,7 +72,7 @@ export function App() {
         /* tab already gone */
       }
     }
-  }, [activeTab, update, state.favorites.length]);
+  }, [activeTab, update, state.favorites]);
 
   const onAutoOrganize = useCallback(async () => {
     const { groups, ungrouped, totalConsidered } = organizeTabs(tabs);
@@ -159,9 +160,13 @@ export function App() {
     const a = parseDrag(e.active.id);
     const o = parseDrag(e.over?.id);
     if (!a || !o) return;
+    if (e.active.id === e.over?.id) return;
+
+    const searching = query.trim().length > 0;
 
     // ---- live → live: reorder browser tabs + activate dragged tab -----
     if (a.kind === 'live' && o.kind === 'live') {
+      if (searching) return; // ambiguous indices while filtered
       const from = tabs.find((t) => t.id === a.tabId);
       const to = tabs.find((t) => t.id === o.tabId);
       if (!from || !to || to.index == null) return;
@@ -184,7 +189,12 @@ export function App() {
       if (!live) return;
       const tab = tabFromChromeTab(live);
       if (!tab) return;
-      update(addFavorite(tab));
+      const alreadyFav = state.favorites.some((f) => f.url === tab.url);
+      if (!alreadyFav && state.favorites.length >= FAVORITES_LIMIT) {
+        setToast('Favorites are full (max 8).');
+        return;
+      }
+      if (!alreadyFav) update(addFavorite(tab));
       try {
         await chrome.tabs.remove(a.tabId);
       } catch {
@@ -199,8 +209,13 @@ export function App() {
       if (!live) return;
       const tab = tabFromChromeTab(live);
       if (!tab) return;
-      const folderId = o.folderId;
-      update(addTabToFolder(folderId, tab));
+      const target = state.folders.find((f) => f.id === o.folderId);
+      if (!target) {
+        setToast('Folder no longer exists.');
+        return;
+      }
+      const alreadyInFolder = target.tabs.some((t) => t.url === tab.url);
+      if (!alreadyInFolder) update(addTabToFolder(o.folderId, tab));
       try {
         await chrome.tabs.remove(a.tabId);
       } catch {
@@ -214,7 +229,7 @@ export function App() {
       const ids = state.favorites.map((f) => f.id);
       const from = ids.indexOf(a.id);
       const to = ids.indexOf(o.id);
-      if (from < 0 || to < 0) return;
+      if (from < 0 || to < 0 || from === to) return;
       update(reorderFavorites(from, to));
       return;
     }
@@ -222,14 +237,20 @@ export function App() {
     // ---- saved → saved: reorder within folder, or move between ---------
     if (a.kind === 'saved' && o.kind === 'saved') {
       if (a.folderId === o.folderId) {
+        if (searching) return; // ambiguous indices while filtered
         const folder = state.folders.find((f) => f.id === a.folderId);
         if (!folder) return;
         const ids = folder.tabs.map((t) => t.id);
         const from = ids.indexOf(a.id);
         const to = ids.indexOf(o.id);
-        if (from < 0 || to < 0) return;
+        if (from < 0 || to < 0 || from === to) return;
         update(reorderTabsInFolder(a.folderId, from, to));
       } else {
+        const target = state.folders.find((f) => f.id === o.folderId);
+        if (!target) {
+          setToast('Folder no longer exists.');
+          return;
+        }
         update(moveTab(a.folderId, o.folderId, a.id));
       }
       return;
@@ -237,9 +258,13 @@ export function App() {
 
     // ---- saved → folder header: move -----------------------------------
     if (a.kind === 'saved' && o.kind === 'dz-folder') {
-      if (a.folderId !== o.folderId) {
-        update(moveTab(a.folderId, o.folderId, a.id));
+      if (a.folderId === o.folderId) return;
+      const target = state.folders.find((f) => f.id === o.folderId);
+      if (!target) {
+        setToast('Folder no longer exists.');
+        return;
       }
+      update(moveTab(a.folderId, o.folderId, a.id));
       return;
     }
 
@@ -248,6 +273,16 @@ export function App() {
       const folder = state.folders.find((f) => f.id === a.folderId);
       const tab = folder?.tabs.find((t) => t.id === a.id);
       if (!tab) return;
+      const alreadyFav = state.favorites.some((f) => f.url === tab.url);
+      if (alreadyFav) {
+        // URL already in favorites — just take it out of the folder.
+        update(removeTabFromFolder(a.folderId, a.id));
+        return;
+      }
+      if (state.favorites.length >= FAVORITES_LIMIT) {
+        setToast('Favorites are full (max 8).');
+        return;
+      }
       const captured = tab;
       update((s) => {
         const removed = removeTabFromFolder(a.folderId, a.id)(s);
@@ -260,11 +295,20 @@ export function App() {
     if (a.kind === 'fav' && (o.kind === 'dz-folder' || o.kind === 'saved')) {
       const fav = state.favorites.find((f) => f.id === a.id);
       if (!fav) return;
-      const folderId = o.folderId;
+      const target = state.folders.find((f) => f.id === o.folderId);
+      if (!target) {
+        setToast('Folder no longer exists.');
+        return;
+      }
+      if (target.tabs.some((t) => t.url === fav.url)) {
+        // URL already in folder — just remove from favorites.
+        update(removeFavorite(a.id));
+        return;
+      }
       const captured = fav;
       update((s) => {
         const removed = removeFavorite(a.id)(s);
-        return addTabToFolder(folderId, { ...captured, id: crypto.randomUUID() })(
+        return addTabToFolder(o.folderId, { ...captured, id: crypto.randomUUID() })(
           removed,
         );
       });
@@ -281,10 +325,11 @@ export function App() {
         if (created.windowId != null) {
           await chrome.windows.update(created.windowId, { focused: true });
         }
+        // Only remove from folder if the open succeeded.
+        update(removeTabFromFolder(a.folderId, a.id));
       } catch {
-        /* ignore */
+        setToast('Could not open this tab.');
       }
-      update(removeTabFromFolder(a.folderId, a.id));
       return;
     }
 
@@ -297,10 +342,10 @@ export function App() {
         if (created.windowId != null) {
           await chrome.windows.update(created.windowId, { focused: true });
         }
+        update(removeFavorite(a.id));
       } catch {
-        /* ignore */
+        setToast('Could not open this tab.');
       }
-      update(removeFavorite(a.id));
       return;
     }
   };
@@ -355,8 +400,6 @@ export function App() {
             <FavoritesRow
               favorites={state.favorites}
               update={update}
-              onAddCurrent={addCurrentToFavorites}
-              canAddCurrent={canAddCurrent && !alreadyFavorite}
               activeUrl={activeTab?.url}
             />
             <FoldersSection
