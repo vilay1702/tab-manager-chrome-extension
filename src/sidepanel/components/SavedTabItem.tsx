@@ -9,6 +9,7 @@ import {
   MenuItem,
   ListItemIcon as MenuIcon,
   Divider,
+  TextField,
 } from "@mui/material";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
@@ -16,6 +17,7 @@ import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import DriveFileMoveOutlinedIcon from "@mui/icons-material/DriveFileMoveOutlined";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import { Tab } from "../../lib/types";
 import { Favicon } from "./Favicon";
 import { openOrActivate } from "../../lib/tabs";
@@ -34,6 +36,7 @@ type Props = {
   onRemove: () => void;
   onToggleFavorite: () => void;
   onMoveTo: (folderId: string) => void;
+  onRename: (name: string) => void;
 };
 
 export function SavedTabItem({
@@ -46,6 +49,7 @@ export function SavedTabItem({
   onRemove,
   onToggleFavorite,
   onMoveTo,
+  onRename,
 }: Props) {
   const sortable = useSortable({
     id: savedId(folderId, tab.id),
@@ -60,9 +64,24 @@ export function SavedTabItem({
     isDragging,
   } = sortable;
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(tab.title);
 
   const open = (e: MouseEvent) => setAnchor(e.currentTarget as HTMLElement);
   const close = () => setAnchor(null);
+
+  const startRename = () => {
+    setDraft(tab.title);
+    setRenaming(true);
+  };
+  const commitRename = () => {
+    if (draft.trim() && draft.trim() !== tab.title) onRename(draft);
+    setRenaming(false);
+  };
+  const cancelRename = () => {
+    setDraft(tab.title);
+    setRenaming(false);
+  };
 
   const moveOptions = folderOptions.filter((f) => f.id !== folderId);
   const domain = domainOf(tab.url);
@@ -81,8 +100,13 @@ export function SavedTabItem({
     >
       <ListItemButton
         selected={isActive}
-        onClick={(e) => openOrActivate(tab.url, e.metaKey || e.ctrlKey)}
+        disableRipple={renaming}
+        onClick={(e) => {
+          if (renaming) return;
+          openOrActivate(tab.url, e.metaKey || e.ctrlKey);
+        }}
         onAuxClick={(e) => {
+          if (renaming) return;
           if (e.button === 1) openOrActivate(tab.url, true);
         }}
         sx={{
@@ -104,7 +128,36 @@ export function SavedTabItem({
           <Favicon url={tab.url} size={16} />
         </ListItemIcon>
         <ListItemText
-          primary={tab.title}
+          primary={
+            renaming ? (
+              <TextField
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") commitRename();
+                  else if (e.key === "Escape") cancelRename();
+                }}
+                variant="outlined"
+                size="small"
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-input": { py: 0.25, fontSize: 13 },
+                  "& .MuiOutlinedInput-root": { borderRadius: 1 },
+                }}
+              />
+            ) : (
+              tab.title
+            )
+          }
           secondary={domain || undefined}
           slotProps={{
             primary: {
@@ -159,6 +212,19 @@ export function SavedTabItem({
           </IconButton>
           <IconButton
             size="small"
+            aria-label="Rename"
+            title="Rename"
+            onClick={(e) => {
+              e.stopPropagation();
+              startRename();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            sx={{ width: 22, height: 22, color: "text.secondary" }}
+          >
+            <EditRoundedIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+          <IconButton
+            size="small"
             aria-label="Tab actions"
             onClick={(e) => {
               e.stopPropagation();
@@ -188,6 +254,17 @@ export function SavedTabItem({
             <OpenInNewRoundedIcon fontSize="small" />
           </MenuIcon>
           Open in new tab
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            close();
+            startRename();
+          }}
+        >
+          <MenuIcon>
+            <EditRoundedIcon fontSize="small" />
+          </MenuIcon>
+          Rename
         </MenuItem>
         {moveOptions.length > 0 && <Divider />}
         {moveOptions.map((f) => (

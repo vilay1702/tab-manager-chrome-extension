@@ -93,6 +93,31 @@ export const removeTabFromFolder =
     ),
   });
 
+export const renameTab =
+  (folderId: string, tabId: string, name: string): Updater =>
+  (s) => ({
+    ...s,
+    folders: s.folders.map((f) =>
+      f.id === folderId
+        ? {
+            ...f,
+            tabs: f.tabs.map((t) =>
+              t.id === tabId ? { ...t, title: name.trim() || t.title } : t,
+            ),
+          }
+        : f,
+    ),
+  });
+
+export const renameFavorite =
+  (id: string, name: string): Updater =>
+  (s) => ({
+    ...s,
+    favorites: s.favorites.map((f) =>
+      f.id === id ? { ...f, title: name.trim() || f.title } : f,
+    ),
+  });
+
 export const moveTab =
   (
     fromFolderId: string,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Box, InputAdornment, Snackbar, Stack, TextField } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import {
@@ -50,14 +50,6 @@ export function App() {
   }, [state.folders.length, update]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
-
-  const trackedUrls = useMemo(() => {
-    const set = new Set<string>();
-    for (const f of state.favorites) set.add(f.url);
-    for (const folder of state.folders)
-      for (const t of folder.tabs) set.add(t.url);
-    return set;
-  }, [state.favorites, state.folders]);
   const canAddCurrent = !!activeTab && isSavable(activeTab.url);
   const alreadyFavorite =
     !!activeTab && state.favorites.some((f) => f.url === activeTab.url);
@@ -374,12 +366,7 @@ export function App() {
               onNewFolder={onNewFolder}
               activeUrl={activeTab?.url}
             />
-            <LiveTabsList
-              tabs={tabs}
-              activeTabId={activeTabId}
-              query={query}
-              trackedUrls={trackedUrls}
-            />
+            <LiveTabsList tabs={tabs} activeTabId={activeTabId} query={query} />
           </Stack>
         </Box>
         <BottomBar

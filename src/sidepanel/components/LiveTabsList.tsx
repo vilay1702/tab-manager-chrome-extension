@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Box, Divider, List, Typography } from '@mui/material';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
@@ -11,40 +10,21 @@ type Props = {
   tabs: LiveTab[];
   activeTabId: number | undefined;
   query: string;
-  trackedUrls: Set<string>;
 };
 
-export function LiveTabsList({ tabs, activeTabId, query, trackedUrls }: Props) {
+export function LiveTabsList({ tabs, activeTabId, query }: Props) {
   const q = query.trim().toLowerCase();
 
-  // For each tracked URL, hide ONE matching live tab (preferring the active
-  // one) so the folder/favorite entry "represents" it. Duplicates beyond
-  // the first stay visible. Pinned tabs are never hidden.
-  const untracked = useMemo(() => {
-    const sorted = [...tabs].sort((a, b) => {
-      const aActive = a.id === activeTabId ? 0 : 1;
-      const bActive = b.id === activeTabId ? 0 : 1;
-      return aActive - bActive;
-    });
-    const consumed = new Set<string>();
-    const hideIds = new Set<number>();
-    for (const t of sorted) {
-      if (t.pinned || t.id == null || !t.url) continue;
-      if (trackedUrls.has(t.url) && !consumed.has(t.url)) {
-        consumed.add(t.url);
-        hideIds.add(t.id);
-      }
-    }
-    return tabs.filter((t) => t.id == null || !hideIds.has(t.id));
-  }, [tabs, trackedUrls, activeTabId]);
-
+  // Every live browser tab is its own entry, identified by chrome.tabs.Tab.id.
+  // Duplicates of the same URL appear as separate rows because they're
+  // separate browser tabs.
   const filtered = q
-    ? untracked.filter(
+    ? tabs.filter(
         (t) =>
           (t.title ?? '').toLowerCase().includes(q) ||
           (t.url ?? '').toLowerCase().includes(q),
       )
-    : untracked;
+    : tabs;
 
   const pinned = filtered.filter((t) => t.pinned);
   const unpinned = filtered.filter((t) => !t.pinned);
@@ -68,7 +48,7 @@ export function LiveTabsList({ tabs, activeTabId, query, trackedUrls }: Props) {
         minHeight: 60,
       }}
     >
-      <SectionHeader label="Tabs" count={untracked.length} />
+      <SectionHeader label="Tabs" count={tabs.length} />
       {filtered.length === 0 ? (
         <Typography variant="body2" sx={{ px: 1.5, color: 'text.secondary' }}>
           {q ? 'No matches.' : isOver ? 'Drop to open as a new tab.' : 'No open tabs.'}

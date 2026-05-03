@@ -25,6 +25,7 @@ import {
   removeFavorite,
   removeTabFromFolder,
   renameFolder,
+  renameTab,
   setFolderColor,
   toggleCollapse,
 } from '../state/actions';
@@ -161,6 +162,7 @@ export function FolderItem({
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              userSelect: 'none',
             }}
           >
             {folder.name}
@@ -182,6 +184,21 @@ export function FolderItem({
         <IconButton
           className="folder-actions"
           size="small"
+          aria-label="Rename folder"
+          title="Rename"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDraftName(folder.name);
+            setRenaming(true);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          sx={{ width: 22, height: 22, color: 'text.secondary', transition: 'opacity 120ms' }}
+        >
+          <EditRoundedIcon sx={{ fontSize: 14 }} />
+        </IconButton>
+        <IconButton
+          className="folder-actions"
+          size="small"
           onClick={(e) => {
             e.stopPropagation();
             openMenu(e);
@@ -194,19 +211,6 @@ export function FolderItem({
       </ListItemButton>
 
       <Menu anchorEl={anchor} open={!!anchor} onClose={closeMenu}>
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            setDraftName(folder.name);
-            setRenaming(true);
-          }}
-        >
-          <MenuIcon>
-            <EditRoundedIcon fontSize="small" />
-          </MenuIcon>
-          Rename
-        </MenuItem>
-        <Divider />
         <Box sx={{ px: 1.5, py: 0.5, display: 'flex', gap: 0.75 }}>
           {FOLDER_COLORS.map((c) => (
             <Box
@@ -283,6 +287,9 @@ export function FolderItem({
                     }}
                     onMoveTo={(toFolderId) =>
                       update(moveTab(folder.id, toFolderId, tab.id))
+                    }
+                    onRename={(name) =>
+                      update(renameTab(folder.id, tab.id, name))
                     }
                   />
                 );
