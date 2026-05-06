@@ -69,7 +69,7 @@ export async function favoriteCurrentTab(ctx: OpCtx): Promise<void> {
   }
   ctx.update(addFavorite(tab));
   if (live.id != null) {
-    ignoreNextClose([live.id]);
+    await ignoreNextClose([live.id]);
     try {
       await chrome.tabs.remove(live.id);
     } catch {
@@ -313,13 +313,14 @@ export function reorderSavedTab(
  * ------------------------------------------------------------------------ */
 
 /** Tell the SW to ignore the next close of these tab IDs (within ~5s). */
-export function ignoreNextClose(tabIds: number[]): void {
+export async function ignoreNextClose(tabIds: number[]): Promise<void> {
   if (tabIds.length === 0) return;
-  chrome.runtime
-    .sendMessage({ kind: 'ignoreClose', tabIds })
-    .catch(() => {
-      /* SW asleep — close events that follow within 5s of wake will still race; acceptable. */
-    });
+  try {
+    await chrome.runtime.sendMessage({ kind: 'ignoreClose', tabIds });
+  } catch {
+    /* SW unavailable — fall through; the tab close that follows may show up
+       in recently-closed, which is mildly noisy but not a data risk. */
+  }
 }
 
 /** Reopen a recently-closed entry and remove it from the list. */
@@ -329,9 +330,20 @@ export async function restoreClosedTab(
   notify: (msg: string) => void,
 ): Promise<void> {
   try {
-    const created = await chrome.tabs.create({ url, active: true });
-    if (created.windowId != null) {
-      await chrome.windows.update(created.windowId, { focused: true });
+    // If the URL is already open in some tab, activate it instead of
+    // making a duplicate.
+    const matches = await chrome.tabs.query({ url });
+    const existing = matches[0];
+    if (existing?.id != null) {
+      await chrome.tabs.update(existing.id, { active: true });
+      if (existing.windowId != null) {
+        await chrome.windows.update(existing.windowId, { focused: true });
+      }
+    } else {
+      const created = await chrome.tabs.create({ url, active: true });
+      if (created.windowId != null) {
+        await chrome.windows.update(created.windowId, { focused: true });
+      }
     }
     await chrome.runtime.sendMessage({
       kind: 'removeClosed',

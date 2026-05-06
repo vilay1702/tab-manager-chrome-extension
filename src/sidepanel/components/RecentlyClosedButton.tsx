@@ -42,6 +42,7 @@ export function RecentlyClosedButton({ list, notify }: Props) {
         <span>
           <IconButton
             size="small"
+            aria-label="Recently closed tabs"
             onClick={open}
             disabled={empty}
             sx={{ width: 32, height: 32, color: 'text.secondary' }}

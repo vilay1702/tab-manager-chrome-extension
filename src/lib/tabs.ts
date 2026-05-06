@@ -56,16 +56,17 @@ export async function openOrActivate(
     }
     return;
   }
-  // Otherwise, navigate the current tab in place — still no new tab.
+  // No live tab has this URL. Reuse the current tab only if it's a
+  // throwaway page (NTP, about:blank, chrome://newtab, etc.) — never
+  // overwrite a real page the user is reading.
   const current = await getCurrentTab();
-  if (current?.id != null) {
+  if (current?.id != null && !isSavable(current.url)) {
     await chrome.tabs.update(current.id, { url, active: true });
     if (current.windowId != null) {
       await chrome.windows.update(current.windowId, { focused: true });
     }
     return;
   }
-  // Fallback: no current tab to navigate (rare).
   await chrome.tabs.create({ url, active: true });
 }
 

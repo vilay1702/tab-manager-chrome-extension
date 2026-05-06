@@ -1,5 +1,6 @@
 import {
   loadRecentlyClosed,
+  loadSettings,
   loadState,
   saveRecentlyClosed,
 } from '../lib/storage';
@@ -12,39 +13,86 @@ chrome.sidePanel
 /* ----- Recently-closed tracking ------------------------------------- */
 
 type CachedTab = { url: string; title: string; favIconUrl?: string };
-const tabCache = new Map<number, CachedTab>();
-const ignoredTabIds = new Map<number, number>(); // tabId -> expiresAt
+const TAB_CACHE_KEY = 'tabSnapshot';
+const IGNORE_KEY = 'tabIgnoreUntil';
 
-function cacheTab(t: chrome.tabs.Tab) {
+// session storage survives SW sleep/wake within a browser session, so we
+// never lose URL info for the first close after the SW spins back up.
+async function readSnapshot(): Promise<Record<string, CachedTab>> {
+  const r = await chrome.storage.session.get(TAB_CACHE_KEY);
+  return (r[TAB_CACHE_KEY] as Record<string, CachedTab> | undefined) ?? {};
+}
+
+async function writeSnapshot(snap: Record<string, CachedTab>): Promise<void> {
+  await chrome.storage.session.set({ [TAB_CACHE_KEY]: snap });
+}
+
+async function readIgnore(): Promise<Record<string, number>> {
+  const r = await chrome.storage.session.get(IGNORE_KEY);
+  return (r[IGNORE_KEY] as Record<string, number> | undefined) ?? {};
+}
+
+async function writeIgnore(map: Record<string, number>): Promise<void> {
+  await chrome.storage.session.set({ [IGNORE_KEY]: map });
+}
+
+async function cacheTab(t: chrome.tabs.Tab) {
   if (t.id == null || !isSavable(t.url)) return;
-  tabCache.set(t.id, {
+  const snap = await readSnapshot();
+  snap[String(t.id)] = {
     url: t.url!,
     title: (t.title ?? '').trim() || t.url!,
     favIconUrl: t.favIconUrl,
-  });
+  };
+  await writeSnapshot(snap);
 }
 
-// Hydrate cache for already-open tabs (covers SW restarts).
-chrome.tabs.query({}).then((all) => {
-  for (const t of all) cacheTab(t);
+// Hydrate snapshot for already-open tabs on SW startup.
+chrome.tabs.query({}).then(async (all) => {
+  const snap = await readSnapshot();
+  for (const t of all) {
+    if (t.id == null || !isSavable(t.url)) continue;
+    snap[String(t.id)] = {
+      url: t.url!,
+      title: (t.title ?? '').trim() || t.url!,
+      favIconUrl: t.favIconUrl,
+    };
+  }
+  await writeSnapshot(snap);
 });
 
-chrome.tabs.onCreated.addListener((t) => cacheTab(t));
-chrome.tabs.onUpdated.addListener((_id, _info, t) => cacheTab(t));
+chrome.tabs.onCreated.addListener((t) => {
+  cacheTab(t).catch(() => {});
+});
+chrome.tabs.onUpdated.addListener((_id, _info, t) => {
+  cacheTab(t).catch(() => {});
+});
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  const cached = tabCache.get(tabId);
-  tabCache.delete(tabId);
-  if (!cached) return;
-  const ignoreUntil = ignoredTabIds.get(tabId);
-  if (ignoreUntil != null) {
-    ignoredTabIds.delete(tabId);
-    if (ignoreUntil >= Date.now()) return;
-  }
-  recordClosedTab(cached).catch((err) =>
-    console.error('recordClosedTab failed:', err),
+  handleRemoved(tabId).catch((err) =>
+    console.error('handleRemoved failed:', err),
   );
 });
+
+async function handleRemoved(tabId: number) {
+  const key = String(tabId);
+  const snap = await readSnapshot();
+  const cached = snap[key];
+  if (cached) {
+    delete snap[key];
+    await writeSnapshot(snap);
+  }
+  if (!cached) return;
+
+  const ignoreMap = await readIgnore();
+  const ignoreUntil = ignoreMap[key];
+  if (ignoreUntil != null) {
+    delete ignoreMap[key];
+    await writeIgnore(ignoreMap);
+    if (ignoreUntil >= Date.now()) return;
+  }
+  await recordClosedTab(cached);
+}
 
 async function recordClosedTab(t: CachedTab) {
   const list = await loadRecentlyClosed();
@@ -69,10 +117,14 @@ type Message =
 
 chrome.runtime.onMessage.addListener((msg: Message, _sender, sendResponse) => {
   if (msg?.kind === 'ignoreClose') {
-    const expiresAt = Date.now() + 5_000;
-    for (const id of msg.tabIds) ignoredTabIds.set(id, expiresAt);
-    sendResponse({ ok: true });
-    return false;
+    (async () => {
+      const ignoreMap = await readIgnore();
+      const expiresAt = Date.now() + 5_000;
+      for (const id of msg.tabIds) ignoreMap[String(id)] = expiresAt;
+      await writeIgnore(ignoreMap);
+      sendResponse({ ok: true });
+    })();
+    return true;
   }
   if (msg?.kind === 'removeClosed') {
     (async () => {
@@ -96,10 +148,16 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== 'recently-closed-prune') return;
   const list = await loadRecentlyClosed();
   await saveRecentlyClosed(list); // saveRecentlyClosed re-prunes
+  const ignoreMap = await readIgnore();
   const now = Date.now();
-  for (const [id, exp] of ignoredTabIds) {
-    if (exp < now) ignoredTabIds.delete(id);
+  let dirty = false;
+  for (const [id, exp] of Object.entries(ignoreMap)) {
+    if (exp < now) {
+      delete ignoreMap[id];
+      dirty = true;
+    }
   }
+  if (dirty) await writeIgnore(ignoreMap);
 });
 
 /**
@@ -114,6 +172,9 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 async function restoreSavedTabs() {
+  const settings = await loadSettings();
+  if (!settings.restoreSavedTabsOnStartup) return;
+
   // Give Chrome ~800 ms to finish restoring the previous session, so we
   // can dedupe accurately.
   await new Promise<void>((resolve) => setTimeout(resolve, 800));

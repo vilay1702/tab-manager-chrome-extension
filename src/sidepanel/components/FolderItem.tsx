@@ -27,6 +27,7 @@ import {
   toggleCollapse,
 } from '../state/actions';
 import { SavedTabItem } from './SavedTabItem';
+import { ConfirmDialog } from './ConfirmDialog';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { dzFolder, savedId } from '../lib/dnd';
@@ -49,6 +50,7 @@ export function FolderItem({
   const [renaming, setRenaming] = useState(false);
   const [draftName, setDraftName] = useState(folder.name);
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: dzFolder(folder.id),
@@ -220,6 +222,7 @@ export function FolderItem({
           </IconButton>
           <IconButton
             size="small"
+            aria-label="Folder actions"
             onClick={(e) => {
               e.stopPropagation();
               openMenu(e);
@@ -260,11 +263,10 @@ export function FolderItem({
         <MenuItem
           onClick={() => {
             closeMenu();
-            if (
-              folder.tabs.length === 0 ||
-              confirm(`Delete "${folder.name}" and ${folder.tabs.length} tab(s)?`)
-            ) {
+            if (folder.tabs.length === 0) {
               update(deleteFolder(folder.id));
+            } else {
+              setConfirmDeleteOpen(true);
             }
           }}
           sx={{ color: 'error.main' }}
@@ -275,6 +277,19 @@ export function FolderItem({
           Delete folder
         </MenuItem>
       </Menu>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete folder?"
+        message={`"${folder.name}" and ${folder.tabs.length} saved tab${folder.tabs.length === 1 ? '' : 's'} will be removed.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          setConfirmDeleteOpen(false);
+          update(deleteFolder(folder.id));
+        }}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
 
       <Collapse in={open} unmountOnExit>
         <Box sx={{ pl: 2.5 }}>

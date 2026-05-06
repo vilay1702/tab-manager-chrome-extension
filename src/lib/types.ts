@@ -38,6 +38,14 @@ export type RecentlyClosedTab = {
 export const RECENTLY_CLOSED_TTL_MS = 2 * 24 * 60 * 60 * 1000;
 export const RECENTLY_CLOSED_LIMIT = 100;
 
+export type Settings = {
+  restoreSavedTabsOnStartup: boolean;
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  restoreSavedTabsOnStartup: false,
+};
+
 export const FOLDER_COLORS = [
   '#6366f1', // indigo
   '#10b981', // emerald

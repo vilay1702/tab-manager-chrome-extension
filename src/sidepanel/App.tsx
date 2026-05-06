@@ -15,13 +15,17 @@ import {
 import { useStore } from './hooks/useStore';
 import { useLiveTabs } from './hooks/useLiveTabs';
 import { useRecentlyClosed } from './hooks/useRecentlyClosed';
+import { useSettings } from './hooks/useSettings';
 import { FavoritesRow } from './components/FavoritesRow';
 import { LiveTabsList } from './components/LiveTabsList';
 import { FoldersSection } from './components/FoldersSection';
 import { BottomBar } from './components/BottomBar';
 import { DragPreview } from './components/DragPreview';
+import { ConfirmDialog } from './components/ConfirmDialog';
+import { PromptDialog } from './components/PromptDialog';
 import { addFolder, applyAutoOrganize } from './state/actions';
 import { FOLDER_COLORS } from '../lib/types';
+import { archiveAllTabs } from './lib/liveActions';
 import { DragInfo, parseDrag } from './lib/dnd';
 import { organizeTabs } from './lib/autoOrganize';
 import {
@@ -45,20 +49,32 @@ export function App() {
   const { state, loaded, update } = useStore();
   const { tabs, activeTabId, windowId } = useLiveTabs();
   const recentlyClosed = useRecentlyClosed();
+  const { settings, updateSettings } = useSettings();
   const [query, setQuery] = useState('');
   const [toast, setToast] = useState<string>('');
   const [activeDrag, setActiveDrag] = useState<DragInfo | null>(null);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const ctx: OpCtx = { state, tabs, update, notify: setToast };
 
   /* ----- Folder / favorite top-level actions ----- */
 
-  const onNewFolder = useCallback(() => {
-    const name = prompt('Folder name', 'New folder');
-    if (name === null) return;
+  const onNewFolder = useCallback(() => setNewFolderOpen(true), []);
+  const confirmNewFolder = (name: string) => {
     const color = FOLDER_COLORS[state.folders.length % FOLDER_COLORS.length];
     update(addFolder(name, color));
-  }, [state.folders.length, update]);
+    setNewFolderOpen(false);
+  };
+
+  const onArchiveAll = useCallback(() => {
+    if (windowId == null) return;
+    setArchiveOpen(true);
+  }, [windowId]);
+  const confirmArchive = () => {
+    if (windowId != null) archiveAllTabs(windowId);
+    setArchiveOpen(false);
+  };
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const alreadyFavorite =
@@ -104,7 +120,7 @@ export function App() {
     } catch {
       /* ignore */
     }
-    if (tabIdsToClose.length > 0) ignoreNextClose(tabIdsToClose);
+    if (tabIdsToClose.length > 0) await ignoreNextClose(tabIdsToClose);
     for (const id of tabIdsToClose) {
       try {
         await chrome.tabs.remove(id);
@@ -295,6 +311,9 @@ export function App() {
           canAutoOrganize={tabs.length >= 2}
           recentlyClosed={recentlyClosed}
           notify={setToast}
+          onArchiveAll={onArchiveAll}
+          settings={settings}
+          onSettingsChange={updateSettings}
         />
         <Snackbar
           open={!!toast}
@@ -303,6 +322,24 @@ export function App() {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           message={toast}
           sx={{ '& .MuiSnackbarContent-root': { fontSize: 12 } }}
+        />
+        <PromptDialog
+          open={newFolderOpen}
+          title="New folder"
+          label="Folder name"
+          initialValue="New folder"
+          confirmLabel="Create"
+          onConfirm={confirmNewFolder}
+          onCancel={() => setNewFolderOpen(false)}
+        />
+        <ConfirmDialog
+          open={archiveOpen}
+          title="Close all tabs?"
+          message={`Close ${tabs.filter((t) => !t.pinned).length} tab(s) in this window. Pinned tabs stay open.`}
+          confirmLabel="Close all"
+          destructive
+          onConfirm={confirmArchive}
+          onCancel={() => setArchiveOpen(false)}
         />
       </Box>
       <DragOverlay

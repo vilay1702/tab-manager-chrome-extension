@@ -1,13 +1,16 @@
 import {
   AppState,
+  DEFAULT_SETTINGS,
   EMPTY_STATE,
   RECENTLY_CLOSED_LIMIT,
   RECENTLY_CLOSED_TTL_MS,
   RecentlyClosedTab,
+  Settings,
 } from './types';
 
 const KEY = 'tabManagerState';
 const RECENTLY_CLOSED_KEY = 'recentlyClosed';
+const SETTINGS_KEY = 'tabManagerSettings';
 
 export async function loadState(): Promise<AppState> {
   const result = await chrome.storage.local.get(KEY);
@@ -60,6 +63,34 @@ export function subscribeRecentlyClosed(
         | RecentlyClosedTab[]
         | undefined;
       handler(prune(next ?? []));
+    }
+  };
+  chrome.storage.onChanged.addListener(listener);
+  return () => chrome.storage.onChanged.removeListener(listener);
+}
+
+export async function loadSettings(): Promise<Settings> {
+  const result = await chrome.storage.local.get(SETTINGS_KEY);
+  const stored = result[SETTINGS_KEY] as Partial<Settings> | undefined;
+  return { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
+}
+
+export async function saveSettings(settings: Settings): Promise<void> {
+  await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+}
+
+export function subscribeSettings(
+  handler: (settings: Settings) => void,
+): () => void {
+  const listener = (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    area: string,
+  ) => {
+    if (area === 'local' && changes[SETTINGS_KEY]) {
+      const next = changes[SETTINGS_KEY].newValue as
+        | Partial<Settings>
+        | undefined;
+      handler({ ...DEFAULT_SETTINGS, ...(next ?? {}) });
     }
   };
   chrome.storage.onChanged.addListener(listener);

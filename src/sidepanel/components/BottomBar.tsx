@@ -3,9 +3,10 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import LayersClearOutlinedIcon from '@mui/icons-material/LayersClearOutlined';
 import AutoFixHighRoundedIcon from '@mui/icons-material/AutoFixHighRounded';
-import { archiveAllTabs, newTab } from '../lib/liveActions';
+import { newTab } from '../lib/liveActions';
 import { RecentlyClosedButton } from './RecentlyClosedButton';
-import { RecentlyClosedTab } from '../../lib/types';
+import { SettingsButton } from './SettingsButton';
+import { RecentlyClosedTab, Settings } from '../../lib/types';
 
 type Props = {
   windowId: number | undefined;
@@ -15,6 +16,9 @@ type Props = {
   canAutoOrganize: boolean;
   recentlyClosed: RecentlyClosedTab[];
   notify: (msg: string) => void;
+  onArchiveAll: () => void;
+  settings: Settings;
+  onSettingsChange: (patch: Partial<Settings>) => void;
 };
 
 export function BottomBar({
@@ -25,13 +29,11 @@ export function BottomBar({
   canAutoOrganize,
   recentlyClosed,
   notify,
+  onArchiveAll,
+  settings,
+  onSettingsChange,
 }: Props) {
-  const archive = () => {
-    if (windowId == null || tabCount === 0) return;
-    if (confirm(`Close ${tabCount} tab(s) in this window?`)) {
-      archiveAllTabs(windowId);
-    }
-  };
+  const archiveDisabled = windowId == null || tabCount === 0;
 
   return (
     <Box
@@ -50,6 +52,7 @@ export function BottomBar({
         <span>
           <IconButton
             size="small"
+            aria-label="Auto-organize tabs"
             onClick={onAutoOrganize}
             disabled={!canAutoOrganize}
             sx={{ width: 32, height: 32, color: 'text.secondary' }}
@@ -61,6 +64,7 @@ export function BottomBar({
       <Tooltip title="New folder">
         <IconButton
           size="small"
+          aria-label="New folder"
           onClick={onNewFolder}
           sx={{ width: 32, height: 32, color: 'text.secondary' }}
         >
@@ -71,8 +75,9 @@ export function BottomBar({
         <span>
           <IconButton
             size="small"
-            onClick={archive}
-            disabled={tabCount === 0}
+            aria-label="Close all tabs in window"
+            onClick={onArchiveAll}
+            disabled={archiveDisabled}
             sx={{ width: 32, height: 32, color: 'text.secondary' }}
           >
             <LayersClearOutlinedIcon sx={{ fontSize: 18 }} />
@@ -80,6 +85,7 @@ export function BottomBar({
         </span>
       </Tooltip>
       <RecentlyClosedButton list={recentlyClosed} notify={notify} />
+      <SettingsButton settings={settings} onChange={onSettingsChange} />
       <Box sx={{ flex: 1 }} />
       <Tooltip title="New tab">
         <Fab
