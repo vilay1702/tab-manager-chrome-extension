@@ -27,6 +27,17 @@ export const EMPTY_STATE: AppState = {
 
 export const FAVORITES_LIMIT = 8;
 
+export type RecentlyClosedTab = {
+  id: string;
+  url: string;
+  title: string;
+  favIconUrl?: string;
+  closedAt: number;
+};
+
+export const RECENTLY_CLOSED_TTL_MS = 2 * 24 * 60 * 60 * 1000;
+export const RECENTLY_CLOSED_LIMIT = 100;
+
 export const FOLDER_COLORS = [
   '#6366f1', // indigo
   '#10b981', // emerald

@@ -16,7 +16,10 @@ export function useLiveTabs() {
 
     const refresh = async () => {
       try {
-        const win = await chrome.windows.getLastFocused({ populate: false });
+        // Always use the window the side panel is hosted in — not
+        // lastFocused, which would track whichever window the user just
+        // clicked on and surprise users with multiple windows open.
+        const win = await chrome.windows.getCurrent({ populate: false });
         if (cancelledRef.current) return;
         const list = await chrome.tabs.query({ windowId: win.id });
         if (cancelledRef.current) return;
@@ -26,7 +29,7 @@ export function useLiveTabs() {
         const active = list.find((t) => t.active);
         setActiveTabId(active?.id);
       } catch {
-        /* no focused window yet */
+        /* window not available yet */
       }
     };
 

@@ -12,5 +12,5 @@ export default defineManifest({
     service_worker: 'src/background/service-worker.ts',
     type: 'module',
   },
-  permissions: ['sidePanel', 'tabs', 'storage', 'favicon'],
+  permissions: ['sidePanel', 'tabs', 'storage', 'favicon', 'alarms'],
 });

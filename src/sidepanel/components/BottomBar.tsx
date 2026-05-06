@@ -4,6 +4,8 @@ import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutl
 import LayersClearOutlinedIcon from '@mui/icons-material/LayersClearOutlined';
 import AutoFixHighRoundedIcon from '@mui/icons-material/AutoFixHighRounded';
 import { archiveAllTabs, newTab } from '../lib/liveActions';
+import { RecentlyClosedButton } from './RecentlyClosedButton';
+import { RecentlyClosedTab } from '../../lib/types';
 
 type Props = {
   windowId: number | undefined;
@@ -11,6 +13,8 @@ type Props = {
   onNewFolder: () => void;
   onAutoOrganize: () => void;
   canAutoOrganize: boolean;
+  recentlyClosed: RecentlyClosedTab[];
+  notify: (msg: string) => void;
 };
 
 export function BottomBar({
@@ -19,6 +23,8 @@ export function BottomBar({
   onNewFolder,
   onAutoOrganize,
   canAutoOrganize,
+  recentlyClosed,
+  notify,
 }: Props) {
   const archive = () => {
     if (windowId == null || tabCount === 0) return;
@@ -73,6 +79,7 @@ export function BottomBar({
           </IconButton>
         </span>
       </Tooltip>
+      <RecentlyClosedButton list={recentlyClosed} notify={notify} />
       <Box sx={{ flex: 1 }} />
       <Tooltip title="New tab">
         <Fab

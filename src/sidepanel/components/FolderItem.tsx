@@ -136,7 +136,10 @@ export function FolderItem({
             onChange={(e) => setDraftName(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             onBlur={() => {
-              update(renameFolder(folder.id, draftName));
+              const next = draftName.trim();
+              if (next && next !== folder.name) {
+                update(renameFolder(folder.id, next));
+              }
               setRenaming(false);
             }}
             onKeyDown={(e) => {
