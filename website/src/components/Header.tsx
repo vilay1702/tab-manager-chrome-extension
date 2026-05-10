@@ -20,17 +20,31 @@ export function Header() {
             component={RouterLink}
             to="/"
             sx={{
-              fontWeight: 700,
-              fontSize: '1.15rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
               color: 'text.primary',
               textDecoration: 'none',
-              letterSpacing: '-0.01em',
             }}
           >
-            Stash
+            <Box
+              component="img"
+              src="/logo.png"
+              alt=""
+              sx={{ width: 28, height: 28, display: 'block' }}
+            />
+            <Box
+              sx={{
+                fontWeight: 700,
+                fontSize: '1.15rem',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Stash
+            </Box>
           </Box>
           <Box sx={{ flex: 1 }} />
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
             <Button
               component={RouterLink}
               to="/privacy"

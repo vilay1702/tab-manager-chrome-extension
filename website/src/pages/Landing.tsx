@@ -1,42 +1,42 @@
-import { Box, Button, Container, Stack, Typography } from '@mui/material';
-import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
-import StarRoundedIcon from '@mui/icons-material/StarRounded';
-import AutoFixHighRoundedIcon from '@mui/icons-material/AutoFixHighRounded';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import RestoreRoundedIcon from '@mui/icons-material/RestoreRounded';
-import LockRoundedIcon from '@mui/icons-material/LockRounded';
-import { CHROME_STORE_URL } from '../config';
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import FolderOpenRoundedIcon from "@mui/icons-material/FolderOpenRounded";
+import StarRoundedIcon from "@mui/icons-material/StarRounded";
+import AutoFixHighRoundedIcon from "@mui/icons-material/AutoFixHighRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
+import LockRoundedIcon from "@mui/icons-material/LockRounded";
+import { CHROME_STORE_URL } from "../config";
 
 const features = [
   {
     icon: <FolderOpenRoundedIcon fontSize="medium" />,
-    title: 'Organize into folders',
-    body: 'Drag any tab into a colorful folder. Folders collapse so the panel stays clean.',
+    title: "Folders for everything",
+    body: "Drag a tab. Drop it in a folder. That's it. Make folders for projects, recipes, weekend plans, whatever.",
   },
   {
     icon: <StarRoundedIcon fontSize="medium" />,
-    title: 'Favorites, one click away',
-    body: 'Pin up to 8 sites at the top. ⌘D / Ctrl+D favorites the current tab instantly.',
+    title: "Pin your favorites",
+    body: "Keep up to 8 favorite sites right at the top. Press ⌘D or Ctrl+D to bookmark whatever you're reading.",
   },
   {
     icon: <AutoFixHighRoundedIcon fontSize="medium" />,
-    title: 'Auto-organize',
-    body: 'One click groups similar open tabs into folders — perfect for taming a crowded window.',
+    title: "One click cleanup",
+    body: "Got 60 tabs open? Hit Auto Organize and watch Stash sort them by topic. Like magic, but real.",
   },
   {
     icon: <SearchRoundedIcon fontSize="medium" />,
-    title: 'Search everything',
-    body: 'Filter live tabs, favorites, and saved tabs at once. Press / to focus, Esc to clear.',
+    title: "Find anything fast",
+    body: "Type to search across open tabs, favorites, and saved tabs at once. Press / to jump in, Esc to clear.",
   },
   {
     icon: <RestoreRoundedIcon fontSize="medium" />,
-    title: 'Recently closed',
-    body: 'Reopen anything closed in the last 48 hours from a single button.',
+    title: "Closed it? Bring it back",
+    body: "Closed a tab by mistake? No worries. Stash keeps the last two days handy, ready to reopen.",
   },
   {
     icon: <LockRoundedIcon fontSize="medium" />,
-    title: 'Private by design',
-    body: 'Everything stays in your browser. No tracking, no analytics, no network requests.',
+    title: "Yours, only yours",
+    body: "Everything lives in your browser. No sign up. No tracking. No analytics. Pinky promise.",
   },
 ];
 
@@ -47,22 +47,29 @@ export function Landing() {
         sx={{
           py: { xs: 8, md: 12 },
           background:
-            'linear-gradient(180deg, rgba(26,115,232,0.06) 0%, rgba(26,115,232,0) 100%)',
+            "linear-gradient(180deg, rgba(138,180,248,0.10) 0%, rgba(138,180,248,0) 100%)",
         }}
       >
         <Container maxWidth="md">
-          <Stack spacing={3} alignItems="center" textAlign="center">
-            <Typography variant="h1">Tabs, organized.</Typography>
+          <Stack spacing={3} sx={{ alignItems: "center", textAlign: "center" }}>
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="Stash logo"
+              sx={{ width: 88, height: 88, mb: 1 }}
+            />
+            <Typography variant="h1">Tabs, finally tidy.</Typography>
             <Typography
               variant="body1"
               color="text.secondary"
-              sx={{ maxWidth: 620, fontSize: '1.15rem' }}
+              sx={{ maxWidth: 620, fontSize: "1.15rem" }}
             >
-              Stash is a Chrome side-panel tab manager. Drag tabs into folders, pin
-              favorites, and reopen recently closed tabs — all without leaving the page
-              you're on.
+              Drowning in tabs? Stash is a tiny Chrome extension that tucks into
+              your side panel. Drop tabs into folders, save your favorites, and
+              bring back anything you closed by mistake. All without leaving
+              the page you're on.
             </Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <Button
                 component="a"
                 href={CHROME_STORE_URL}
@@ -71,38 +78,49 @@ export function Landing() {
                 variant="contained"
                 size="large"
               >
-                Add to Chrome — Free
+                Add to Chrome (it's free)
               </Button>
               <Button
                 component="a"
                 href="#features"
                 variant="outlined"
                 size="large"
-                sx={{ color: 'text.primary', borderColor: 'divider' }}
+                sx={{ color: "text.primary", borderColor: "divider" }}
               >
-                See features
+                Show me what it does
               </Button>
             </Stack>
             <Typography variant="caption" color="text.secondary">
-              No account needed · Works offline · Open source-friendly
+              No sign up · Works offline · Always free
             </Typography>
           </Stack>
         </Container>
       </Box>
 
       <Container maxWidth="lg" id="features" sx={{ py: { xs: 6, md: 10 } }}>
-        <Stack spacing={1} sx={{ mb: 5 }}>
-          <Typography variant="h2">Everything you need to tame your tabs</Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-            Built for people who keep too many tabs open. Stash sits in Chrome's native
-            side panel so you never lose your place.
+        <Stack spacing={1} sx={{ mb: 5 }} style={{ alignItems: "center" }}>
+          <Typography align="center" variant="h2">
+            Six little things you'll love
+          </Typography>
+          <Typography
+            align="center"
+            variant="body1"
+            color="text.secondary"
+            sx={{ maxWidth: 640 }}
+          >
+            Made for people who always have too many tabs open. (We get it.
+            We're those people too.)
           </Typography>
         </Stack>
         <Box
           sx={{
-            display: 'grid',
+            display: "grid",
             gap: 3,
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "1fr 1fr",
+              md: "1fr 1fr 1fr",
+            },
           }}
         >
           {features.map((f) => (
@@ -112,11 +130,11 @@ export function Landing() {
                 p: 3,
                 borderRadius: 2,
                 border: 1,
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
+                borderColor: "divider",
+                bgcolor: "background.paper",
               }}
             >
-              <Box sx={{ color: 'primary.main', mb: 1.5 }}>{f.icon}</Box>
+              <Box sx={{ color: "primary.main", mb: 1.5 }}>{f.icon}</Box>
               <Typography variant="h4" gutterBottom>
                 {f.title}
               </Typography>
@@ -128,14 +146,18 @@ export function Landing() {
         </Box>
       </Container>
 
-      <Box sx={{ bgcolor: 'action.hover', py: { xs: 6, md: 8 } }}>
+      <Box sx={{ bgcolor: "action.hover", py: { xs: 6, md: 8 } }}>
         <Container maxWidth="md">
-          <Stack spacing={2} alignItems="center" textAlign="center">
-            <Typography variant="h2">Why a side panel?</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-              Most tab managers steal a whole tab or pop up a tiny dialog. Stash uses
-              Chrome's native side panel, so your saved tabs sit beside whatever you're
-              reading — no context switch.
+          <Stack spacing={2} sx={{ alignItems: "center", textAlign: "center" }}>
+            <Typography variant="h2">Why the side panel?</Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ maxWidth: 640 }}
+            >
+              Other tab managers grab a whole tab or pop up right over your
+              work. Stash slides in next to what you're already doing, quietly,
+              so you stay in the zone.
             </Typography>
             <Button
               component="a"
@@ -146,7 +168,7 @@ export function Landing() {
               size="large"
               sx={{ mt: 1 }}
             >
-              Get Stash for Chrome
+              Try Stash today
             </Button>
           </Stack>
         </Container>

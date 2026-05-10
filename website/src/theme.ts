@@ -2,23 +2,27 @@ import { createTheme } from '@mui/material/styles';
 
 export const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#1a73e8',
-      contrastText: '#ffffff',
+      main: '#8ab4f8',
+      contrastText: '#0b1f3a',
     },
     secondary: {
-      main: '#5f6368',
+      main: '#c4c7ca',
     },
     background: {
-      default: '#ffffff',
-      paper: '#ffffff',
+      default: '#202124',
+      paper: '#2d2e31',
     },
     text: {
-      primary: '#202124',
-      secondary: '#5f6368',
+      primary: '#e8eaed',
+      secondary: '#9aa0a6',
     },
-    divider: 'rgba(0,0,0,0.08)',
+    divider: 'rgba(255,255,255,0.10)',
+    action: {
+      hover: 'rgba(255,255,255,0.06)',
+      selected: 'rgba(138,180,248,0.16)',
+    },
   },
   typography: {
     fontFamily:

@@ -18,8 +18,10 @@ export function Footer() {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={2}
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          justifyContent="space-between"
+          sx={{
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            justifyContent: 'space-between',
+          }}
         >
           <Typography variant="body2" color="text.secondary">
             © {new Date().getFullYear()} Stash. All rights reserved.
