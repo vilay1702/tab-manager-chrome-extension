@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
+    "create-zip": "npm run build && cd dist && zip -r ../stash-v1.0.0.zip .",
     "dev:hmr": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
