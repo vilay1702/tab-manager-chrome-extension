@@ -32,7 +32,6 @@ import {
   OpCtx,
   activateLiveTab,
   favoriteCurrentTab,
-  ignoreNextClose,
   moveFavoriteToFolder,
   moveFavoriteToLive,
   moveLiveToFavorites,
@@ -105,48 +104,20 @@ export function App() {
       return r.state;
     });
 
-    // Close live tabs whose URLs got saved. Re-query to avoid stale IDs.
-    const savedUrls = new Set<string>();
-    for (const g of groups) for (const t of g.tabs) savedUrls.add(t.url);
-    let tabIdsToClose: number[] = [];
-    try {
-      const fresh =
-        windowId != null
-          ? await chrome.tabs.query({ windowId })
-          : await chrome.tabs.query({ currentWindow: true });
-      tabIdsToClose = fresh
-        .filter((t) => t.id != null && !t.pinned && t.url && savedUrls.has(t.url))
-        .map((t) => t.id!);
-    } catch {
-      /* ignore */
-    }
-    if (tabIdsToClose.length > 0) await ignoreNextClose(tabIdsToClose);
-    for (const id of tabIdsToClose) {
-      try {
-        await chrome.tabs.remove(id);
-      } catch {
-        /* tab already gone */
-      }
-    }
-
     const parts: string[] = [];
     if (result.foldersCreated)
       parts.push(`${result.foldersCreated} new folder${result.foldersCreated > 1 ? 's' : ''}`);
     if (result.foldersUpdated)
       parts.push(`${result.foldersUpdated} updated`);
-    if (result.tabsAdded === 0 && tabIdsToClose.length === 0) {
+    if (result.tabsAdded === 0) {
       setToast('Already organized — nothing new to save.');
     } else {
-      const closed =
-        tabIdsToClose.length > 0
-          ? ` Closed ${tabIdsToClose.length} live tab${tabIdsToClose.length > 1 ? 's' : ''}.`
-          : '';
       setToast(
-        `Moved ${result.tabsAdded} tab${result.tabsAdded > 1 ? 's' : ''} into ${parts.join(', ')}.${closed}` +
+        `Moved ${result.tabsAdded} tab${result.tabsAdded > 1 ? 's' : ''} into ${parts.join(', ')}.` +
           (ungrouped ? ` ${ungrouped} singleton${ungrouped > 1 ? 's' : ''} skipped.` : ''),
       );
     }
-  }, [tabs, update, windowId]);
+  }, [tabs, update]);
 
   /* ----- Keyboard ----- */
 
