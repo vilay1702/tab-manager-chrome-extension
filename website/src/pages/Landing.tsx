@@ -66,8 +66,8 @@ export function Landing() {
             >
               Drowning in tabs? Stash is a tiny Chrome extension that tucks into
               your side panel. Drop tabs into folders, save your favorites, and
-              bring back anything you closed by mistake. All without leaving
-              the page you're on.
+              bring back anything you closed by mistake. All without leaving the
+              page you're on.
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <Button
@@ -100,7 +100,7 @@ export function Landing() {
       <Container maxWidth="lg" id="features" sx={{ py: { xs: 6, md: 10 } }}>
         <Stack spacing={1} sx={{ mb: 5 }} style={{ alignItems: "center" }}>
           <Typography align="center" variant="h2">
-            Six little things you'll love
+            Things you'll love
           </Typography>
           <Typography
             align="center"
